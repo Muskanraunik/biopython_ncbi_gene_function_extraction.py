@@ -1,0 +1,43 @@
+import csv
+from Bio import Entrez
+import xml.etree.ElementTree as ET
+
+def fetch_gene_summary(gene_symbol):
+    Entrez.email = "xyz@gmail.com" 
+    handle = Entrez.esearch(db="gene", term=gene_symbol)
+    record = Entrez.read(handle)
+    handle.close()
+    if record['Count'] == '0':
+        return f"Gene {gene_symbol} not found"
+    gene_id = record['IdList'][0]
+    
+    try:
+        handle = Entrez.efetch(db="gene", id=gene_id, rettype="gene", retmode="xml")
+        gene_info = handle.read()
+        handle.close()
+        
+        # Parse XML response
+        root = ET.fromstring(gene_info)
+        summary = root.find(".//Entrezgene_summary")
+        if summary is not None:
+            return summary.text.strip()
+        else:
+            return "Summary not found"
+    
+    except Exception as e:
+        return f"Error fetching summary for {gene_symbol}: {e}"
+
+def extract_gene_summaries_from_csv(csv_file, output_file):
+    with open(output_file, 'w') as out_file:
+        writer = csv.writer(out_file)
+        
+        with open(csv_file, 'r') as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                gene_symbol = row['gene_name']
+                gene_summary = fetch_gene_summary(gene_symbol)
+                writer.writerow([gene_symbol, gene_summary])
+                print(f"Summary for {gene_symbol} written to {output_file}")
+# Replace 'gene_list.csv' with your CSV file containing gene names in 'gene_name' column
+# Replace 'gene_summaries.txt' with the desired output file name
+extract_gene_summaries_from_csv('gene_name).csv', 'gene(gene_summaries.txt')
